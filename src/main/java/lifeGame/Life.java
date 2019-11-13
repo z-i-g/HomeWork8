@@ -1,5 +1,11 @@
 package lifeGame;
 
+import com.sun.deploy.security.BadCertificateDialog;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+
 public class Life {
 
     private MyFileRW myFileRW;
@@ -19,7 +25,7 @@ public class Life {
     }
 
 
-    private void getCell(int x, int y) {
+    public void getCell(int x, int y) {
         int tempX = x;
         int tempY = y;
         for (int i = 0; i < world.length; i++) {
@@ -90,8 +96,14 @@ public class Life {
 
 
     public static void main(String[] args) {
+        long start = System.currentTimeMillis();
         Life life = new Life(args);
         life.startGame();
+        long finish = System.currentTimeMillis();
+        System.out.println(start);
+        System.out.println(finish);
+
+
     }
 
 }
