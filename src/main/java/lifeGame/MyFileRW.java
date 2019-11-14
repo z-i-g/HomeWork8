@@ -2,11 +2,30 @@ package lifeGame;
 
 import java.io.*;
 
+/**
+ * Класс для считывания и сохранения начальной и конечной конфигураций игры.
+ *
+ * @version 1.0
+ * @autor Айрат Загидуллин
+ */
 public class MyFileRW {
 
     private int width;
     private int height;
     private int[][] world;
+    private String inputFileName;
+    private String outputFileName;
+
+    /**
+     * Конструктор
+     *
+     * @param inputFileName - имя файла начальной конфигурации
+     * @param  outputFileName - имя файла конечной конфигурации
+     */
+    public MyFileRW(String inputFileName, String outputFileName) {
+        this.inputFileName = inputFileName;
+        this.outputFileName = outputFileName;
+    }
 
     public int getWidth() {
         return width;
@@ -25,8 +44,11 @@ public class MyFileRW {
     }
 
 
-    public void readFile(String fileName) {
-        try (BufferedReader widthHeightReader = new BufferedReader(new FileReader(fileName))) {
+    /**
+     * Считывание файла
+     */
+    public void readFile() {
+        try (BufferedReader widthHeightReader = new BufferedReader(new FileReader(inputFileName))) {
             String lineLenght;
             while ((lineLenght = widthHeightReader.readLine()) != null) {
                 width = lineLenght.length();
@@ -36,43 +58,37 @@ public class MyFileRW {
             System.err.println("Не найден файл начальной конфигурации!");
         }
 
-        world = new int[width][height];
+        world = new int[height][width];
         String oneLine;
         int row = 0;
 
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName))) {
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFileName))) {
             while (bufferedReader.ready()) {
                 oneLine = bufferedReader.readLine();
                 for (int i = 0; i < width; i++) {
                     world[row][i] = Integer.parseInt(String.valueOf(oneLine.charAt(i)));
-//                    System.out.println("row = " + row + " i = " + i + " value = " + world[row][i]);
                 }
                 row++;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        System.out.println("Ширина: " + width + " Высота: " + (height));
-//        for (int i = 0; i < height; i++) {
-//            for (int j = 0; j < width; j++)
-//                System.out.print(world[i][j] + " ");
-//            System.out.println();
-//        }
     }
 
-    public void writeFile(String fileName) {
+    /**
+     * Сохранение файла
+     */
+    public void writeFile() {
         int row = 0;
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(fileName, false))) {
-            for (int i = 0; i < width; i++) {
-                for (int j = 0; j < height; j++) {
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFileName, false))) {
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
                     bufferedWriter.write(String.valueOf(world[i][j]));
-//                    System.out.println("add " + world[i][j]);
                 }
                 bufferedWriter.flush();
                 bufferedWriter.newLine();
             }
-            System.out.println("Создан файл: " + fileName);
+            System.out.println("Создан файл: " + outputFileName);
         } catch (IOException e) {
             System.err.println("Не удалось создать файл!");
         }

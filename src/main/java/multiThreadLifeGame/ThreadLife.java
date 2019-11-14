@@ -1,55 +1,43 @@
 package multiThreadLifeGame;
 
-import com.sun.deploy.util.ArrayUtil;
-import lifeGame.Life;
 import lifeGame.MyFileRW;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
-
+/**
+ * Многопоточная реализация игры "Жизнь". Начальная конфигурация считывается с файла.
+ * Конечная также записывается в файл после прохождения переданного количества итераций.
+ *
+ * @version 1.0
+ * @autor Айрат Загидуллин
+ */
 public class ThreadLife {
-    static List<ReentrantLock> locks = new ArrayList<ReentrantLock>() {{
-        add(new ReentrantLock());
-        add(new ReentrantLock());
-        add(new ReentrantLock());
-        add(new ReentrantLock());
-        add(new ReentrantLock());
-    }};
-
-    List<Thread> threadList = new ArrayList<Thread>() {{
-        add(new Thread());
-        add(new Thread());
-        add(new Thread());
-        add(new Thread());
-    }};
 
     private MyFileRW myFileRW;
-    private int countLife;
-    private String inputFileName;
-    private String outputFileName;
     private int[][] world;
     private int[][] tempWorld;
-    private int[] stepsX = {1, 1, 0, -1, -1, -1, 0, 1};
-    private int[] stepsY = {0, 1, 1, 1, 0, -1, -1, -1};
+    private final int[] stepsX = {1, 1, 0, -1, -1, -1, 0, 1};
+    private final int[] stepsY = {0, 1, 1, 1, 0, -1, -1, -1};
+    private final int width;
+    private final int height;
     private int generation;
 
+    /**
+     * Конструктор
+     *
+     * @param args - args[0] имя входного файла, args[1] имя выходного файла, args[2] количество "поколений"
+     */
     public ThreadLife(String[] args) {
-        inputFileName = args[0];
-        outputFileName = args[1];
+        myFileRW = new MyFileRW(args[0], args[1]);
         generation = Integer.parseInt(args[2]);
+        myFileRW.readFile();
+        width = myFileRW.getWidth();
+        height = myFileRW.getHeight();
     }
 
-
-    public void getCell(int x, int y) {
+    private void getCell(int x, int y, int count) {
+        int countLife = count;
         int tempX = x;
         int tempY = y;
-        for (int i = 0; i < world.length; i++) {
+        for (int i = 0; i < stepsX.length; i++) {
             x = getStepX(i, tempX);
             y = getStepY(i, tempY);
 
@@ -67,87 +55,51 @@ public class ThreadLife {
         } else if ((world[tempX][tempY] == 0) && (countLife == 3)) {
             tempWorld[tempX][tempY] = 1;
         }
-        countLife = 0;
     }
 
     private int getStepX(int i, int x) {
         x += stepsX[i];
         if (x < 0) {
-            return (x % myFileRW.getWidth()) + myFileRW.getWidth();
+            return (x % height) + height;
         }
-        return x % myFileRW.getWidth();
+        return x % height;
     }
 
     private int getStepY(int i, int y) {
         y += stepsY[i];
         if (y < 0) {
-            return (y % myFileRW.getHeight()) + myFileRW.getHeight();
+            return (y % width) + width;
         }
-        return y % myFileRW.getHeight();
+        return y % width;
     }
 
+
+    /**
+     * Старт игры
+     */
     public void startGame() throws InterruptedException {
-        myFileRW = new MyFileRW();
-        myFileRW.readFile(inputFileName);
         world = myFileRW.getWorld();
-        tempWorld = new int[myFileRW.getWidth()][myFileRW.getHeight()];
-
-        int countProc = Runtime.getRuntime().availableProcessors();
-
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
-
-
-        Thread thread;
-        Thread thread1;
+        tempWorld = new int[height][width];
 
         while (generation != 0) {
-
-            thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int i = 0; i < world.length / 2; i++) {
-                        for (int j = 0; j < myFileRW.getHeight(); j++) {
-                            getCell(i, j);
+            for (int i = 0; i < height; i++) {
+                int finalI = i;
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int j = 0; j < width; j++) {
+                            getCell(finalI, j, 0);
                         }
-                        System.out.println(Thread.currentThread().getName());
                     }
-                }
-            });
-            thread.start();
-            thread.join();
-
-            thread1 = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int i = world.length / 2; i < world.length; i++) {
-                        for (int j = 0; j < myFileRW.getHeight(); j++) {
-                            getCell(i, j);
-                        }
-                        System.out.println(Thread.currentThread().getName());
-                    }
-                }
-            });
-            thread1.start();
-            thread1.join();
-
+                });
+                thread.start();
+                thread.join();
+            }
             generation--;
             world = tempWorld;
-            tempWorld = new int[myFileRW.getWidth()][myFileRW.getHeight()];
-
+            tempWorld = new int[height][width];
         }
-
         myFileRW.setWorld(world);
-        myFileRW.writeFile(outputFileName);
-
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        long start = System.currentTimeMillis();
-        ThreadLife life = new ThreadLife(args);
-        life.startGame();
-        long finish = System.currentTimeMillis();
-        System.out.println(finish - start);
-
-
+        myFileRW.writeFile();
     }
 }

@@ -1,34 +1,41 @@
 package lifeGame;
 
-import com.sun.deploy.security.BadCertificateDialog;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
-
+/**
+ * Однопоточная реализация игры "Жизнь". Начальная конфигурация считывается с файла.
+ * Конечная также записывается в файл после прохождения переданного количества итераций.
+ *
+ * @version 1.0
+ * @autor Айрат Загидуллин
+ */
 public class Life {
 
     private MyFileRW myFileRW;
-    private int countLife;
-    private String inputFileName;
-    private String outputFileName;
     private int[][] world;
     private int[][] tempWorld;
-    private int[] stepsX = {1, 1, 0, -1, -1, -1, 0, 1};
-    private int[] stepsY = {0, 1, 1, 1, 0, -1, -1, -1};
+    private final int[] stepsX = {1, 1, 0, -1, -1, -1, 0, 1};
+    private final int[] stepsY = {0, 1, 1, 1, 0, -1, -1, -1};
+    private final int width;
+    private final int height;
     private int generation;
 
+    /**
+     * Конструктор
+     *
+     * @param args - args[0] имя входного файла, args[1] имя выходного файла, args[2] количество "поколений"
+     */
     public Life(String[] args) {
-        inputFileName = args[0];
-        outputFileName = args[1];
+        myFileRW = new MyFileRW(args[0], args[1]);
         generation = Integer.parseInt(args[2]);
+        myFileRW.readFile();
+        width = myFileRW.getWidth();
+        height = myFileRW.getHeight();
     }
 
 
-    public void getCell(int x, int y) {
+    private void getCell(int x, int y, int countLife) {
         int tempX = x;
         int tempY = y;
-        for (int i = 0; i < world.length; i++) {
+        for (int i = 0; i < stepsX.length; i++) {
             x = getStepX(i, tempX);
             y = getStepY(i, tempY);
 
@@ -52,59 +59,40 @@ public class Life {
     private int getStepX(int i, int x) {
         x += stepsX[i];
         if (x < 0) {
-            return (x % myFileRW.getWidth()) + myFileRW.getWidth();
+            return (x % height) + height;
         }
-        return x % myFileRW.getWidth();
+        return x % height;
     }
 
     private int getStepY(int i, int y) {
         y += stepsY[i];
         if (y < 0) {
-            return (y % myFileRW.getHeight()) + myFileRW.getHeight();
+            return (y % width) + width;
         }
-        return y % myFileRW.getHeight();
+        return y % width;
     }
 
-    public void startGame() {
-        myFileRW = new MyFileRW();
-        myFileRW.readFile(inputFileName);
+    /**
+     * Старт игры
+     */
+    public void startGame() throws InterruptedException {
         world = myFileRW.getWorld();
-        tempWorld = new int[myFileRW.getWidth()][myFileRW.getHeight()];
+        tempWorld = new int[height][width];
 
         while (generation != 0) {
-            for (int i = 0; i < myFileRW.getWidth(); i++) {
-                for (int j = 0; j < myFileRW.getHeight(); j++) {
-                    getCell(i, j);
+            int counLife = 0;
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    getCell(i, j, counLife);
                 }
             }
             generation--;
-
             world = tempWorld;
-            tempWorld = new int[myFileRW.getWidth()][myFileRW.getHeight()];
-
-            myFileRW.setWorld(world);
-
-//            for (int i = 0; i < myFileRW.getWidth(); i++) {
-//                for (int j = 0; j < myFileRW.getHeight(); j++)
-//                    System.out.print(world[i][j] + " ");
-//                System.out.println();
-//        }
-//            System.out.println();
+            tempWorld = new int[height][width];
         }
-        myFileRW.writeFile(outputFileName);
+
+        myFileRW.setWorld(world);
+        myFileRW.writeFile();
     }
-
-
-    public static void main(String[] args) {
-        long start = System.currentTimeMillis();
-        Life life = new Life(args);
-        life.startGame();
-        long finish = System.currentTimeMillis();
-        System.out.println(start);
-        System.out.println(finish);
-
-
-    }
-
 }
 
